@@ -33,11 +33,9 @@ class DockerRunPluginTests extends AbstractPluginTest {
                 id 'com.palantir.docker'
                 id 'com.palantir.docker-run'
             }
-
             docker {
                 name 'foo-image:latest'
             }
-
             dockerRun {
                 name 'foo'
                 image 'foo-image:latest'
@@ -74,7 +72,6 @@ class DockerRunPluginTests extends AbstractPluginTest {
             plugins {
                 id 'com.palantir.docker-run'
             }
-
             dockerRun {
                 name 'bar'
                 image 'alpine:3.2'
@@ -134,7 +131,6 @@ class DockerRunPluginTests extends AbstractPluginTest {
             plugins {
                 id 'com.palantir.docker-run'
             }
-
             dockerRun {
                 name 'bar-nodaemonize'
                 image 'alpine:3.2'
@@ -162,7 +158,6 @@ class DockerRunPluginTests extends AbstractPluginTest {
             plugins {
                 id 'com.palantir.docker-run'
             }
-
             dockerRun {
                 name 'bar-ignore-exit-code'
                 image 'alpine:3.2'
@@ -212,7 +207,7 @@ class DockerRunPluginTests extends AbstractPluginTest {
         buildResult.output =~ /(?m)\/test/
 
         buildResult.task(':dockerRunStatus').outcome == TaskOutcome.SUCCESS
-        buildResult.output =~ /(?m):dockerRunStatus\nDocker container 'foo' is STOPPED./
+        buildResult.output =~ /(?m):dockerRunStatus\s+Docker container 'foo' is STOPPED./
     }
 
     def 'can mount volumes'() {
@@ -226,7 +221,6 @@ class DockerRunPluginTests extends AbstractPluginTest {
         File testFolder = directory("test")
         file('Dockerfile') << '''
             FROM alpine:3.2
-
             RUN mkdir /test
             VOLUME /test
             CMD cat /test/testfile
@@ -236,11 +230,9 @@ class DockerRunPluginTests extends AbstractPluginTest {
                 id 'com.palantir.docker'
                 id 'com.palantir.docker-run'
             }
-
             docker {
                 name 'foo-image:latest'
             }
-
             dockerRun {
                 name 'foo'
                 image 'foo-image:latest'
@@ -273,7 +265,6 @@ class DockerRunPluginTests extends AbstractPluginTest {
         File testFolder = directory("test")
         file('Dockerfile') << '''
             FROM alpine:3.2
-
             RUN mkdir /test
             VOLUME /test
             CMD cat /test/testfile
@@ -283,11 +274,9 @@ class DockerRunPluginTests extends AbstractPluginTest {
                 id 'com.palantir.docker'
                 id 'com.palantir.docker-run'
             }
-
             docker {
                 name 'foo-image:latest'
             }
-
             dockerRun {
                 name 'foo'
                 image 'foo-image:latest'
@@ -313,7 +302,6 @@ class DockerRunPluginTests extends AbstractPluginTest {
         given:
         file('Dockerfile') << '''
             FROM alpine:3.2
-
             RUN mkdir /test
             VOLUME /test
             ENV MYVAR1 QUUW
@@ -327,11 +315,9 @@ class DockerRunPluginTests extends AbstractPluginTest {
                 id 'com.palantir.docker'
                 id 'com.palantir.docker-run'
             }
-
             docker {
                 name 'foo-image:latest'
             }
-
             dockerRun {
                 name 'foo-envvars'
                 image 'foo-image:latest'

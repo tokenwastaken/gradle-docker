@@ -68,7 +68,6 @@ class PalantirDockerPluginTests extends AbstractPluginTest {
             plugins {
                 id 'com.palantir.docker'
             }
-
             docker {
                 name '${id}'
             }
@@ -95,7 +94,6 @@ class PalantirDockerPluginTests extends AbstractPluginTest {
             plugins {
                 id 'com.palantir.docker'
             }
-
             docker {
                 name '${id}'
                 dockerfile project.file("foo")
@@ -125,7 +123,6 @@ class PalantirDockerPluginTests extends AbstractPluginTest {
             plugins {
                 id 'com.palantir.docker'
             }
-
             docker {
                 name '${id}'
                 files "${filename}"
@@ -142,6 +139,38 @@ class PalantirDockerPluginTests extends AbstractPluginTest {
         execCond("docker rmi -f ${id}")
     }
 
+    // TODO: Add support for buildx on CI system then un comment
+    def 'check multiarch'() {
+        given:
+        String id = 'id4'
+        String filename = "foo.txt"
+        file('Dockerfile') << """
+            FROM alpine
+            MAINTAINER ${id}
+            ADD ${filename} /tmp/
+        """.stripIndent()
+        buildFile << """
+            plugins {
+                id 'com.palantir.docker'
+            }
+            docker {
+                name '${id}'
+                files "${filename}"
+                buildx true
+                load true
+                platform 'linux/arm64'
+            }
+        """.stripIndent()
+        new File(projectDir, filename).createNewFile()
+        when:
+        BuildResult buildResult = with('docker').build()
+        then:
+        buildResult.task(':dockerPrepare').outcome == TaskOutcome.SUCCESS
+        buildResult.task(':docker').outcome == TaskOutcome.SUCCESS
+        exec("docker inspect --format '{{.Architecture}}' ${id}") == "'arm64'\n"
+        execCond("docker rmi -f ${id}")
+    }
+
     // Gradle explicitly disallows the test case, fails with the following:
     //Could not determine the dependencies of task ':publishDockerPublicationPublicationToMavenLocal'.
     //> Publishing is not able to resolve a dependency on a project with multiple publications that have different coordinates.
@@ -155,23 +184,18 @@ class PalantirDockerPluginTests extends AbstractPluginTest {
                 id 'maven-publish'
                 id 'com.palantir.docker'
             }
-
             docker {
                 name 'foo'
             }
-
             group 'testgroup'
             version '2.3.4'
-
             dependencies {
                 // Should *not* get published to the docker maven publication
                 compile 'com.google.guava:guava:18.0'
-
                 // Should get published to the docker maven publication
                 docker 'foogroup:barmodule:0.1.2'
                 docker project(":")  // Resolves to "testgroup:junit123..:2.3.4"
             }
-
             publishing {
                 publications {
                     dockerPublication(MavenPublication) {
@@ -220,7 +244,6 @@ class PalantirDockerPluginTests extends AbstractPluginTest {
                 id 'com.palantir.docker'
                 id 'com.palantir.docker-compose'
             }
-
             docker {
                 name 'foo'
             }
@@ -243,7 +266,6 @@ class PalantirDockerPluginTests extends AbstractPluginTest {
             plugins {
                 id 'com.palantir.docker'
             }
-
             docker {
                 name '${id}'
                 tags 'latest', 'another', 'withTaskName@2.0', 'newImageName@${id}-new:latest'
@@ -278,12 +300,10 @@ class PalantirDockerPluginTests extends AbstractPluginTest {
             plugins {
                 id 'com.palantir.docker'
             }
-
             docker {
                 tags 'latest', 'another', 'withTaskName@2.0', 'newImageName@${id}-new:latest'
                 tag 'withTaskNameByTag', '${id}:new-latest'
             }
-
             afterEvaluate {
                 docker.name = '${id}'
             }
@@ -321,17 +341,14 @@ class PalantirDockerPluginTests extends AbstractPluginTest {
             plugins {
                 id 'com.palantir.docker'
             }
-
             docker {
                 name 'fake-service-name'
                 tags 'latest', 'another', 'withTaskName@2.0', 'newImageName@${id}-new:latest'
                 tag 'withTaskNameByTag', '${id}:new-latest'
             }
-
             afterEvaluate {
                 docker.name = '${id}'
             }
-
             task printInfo {
                 doLast {
                     println "LATEST: \${tasks.dockerTagLatest.commandLine}"
@@ -383,7 +400,6 @@ class PalantirDockerPluginTests extends AbstractPluginTest {
             plugins {
                 id 'com.palantir.docker'
             }
-
             docker {
                 name '${id}'
                 buildArgs([BUILD_ARG_NO_DEFAULT: 'gradleBuildArg', BUILD_ARG_WITH_DEFAULT: 'gradleOverrideBuildArg'])
@@ -412,7 +428,6 @@ class PalantirDockerPluginTests extends AbstractPluginTest {
             plugins {
                 id 'com.palantir.docker'
             }
-
             docker {
                 name '${id}'
                 files "${filename}"
@@ -444,7 +459,6 @@ class PalantirDockerPluginTests extends AbstractPluginTest {
             plugins {
                 id 'com.palantir.docker'
             }
-
             docker {
                 name '${id}'
                 pull true
@@ -457,7 +471,7 @@ class PalantirDockerPluginTests extends AbstractPluginTest {
 
         then:
         buildResult.task(':docker').outcome == TaskOutcome.SUCCESS
-        buildResult.output.contains 'Pulling from library/alpine'
+        buildResult.output.contains 'load metadata for docker.io/library/alpine'
         execCond("docker rmi -f ${id}")
     }
 
@@ -472,7 +486,6 @@ class PalantirDockerPluginTests extends AbstractPluginTest {
             plugins {
                 id 'com.palantir.docker'
             }
-
             docker {
                 name '${id}'
                 // this should trigger the error because this is invalid option
@@ -488,6 +501,8 @@ class PalantirDockerPluginTests extends AbstractPluginTest {
         buildResult.task(':docker').outcome == TaskOutcome.FAILED
         buildResult.output.contains('network foobar not found') or(
             buildResult.output.contains('No such network: foobar')
+        ) or(
+            buildResult.output.contains('network mode "foobar" not supported by buildkit')
         )
         execCond("docker rmi -f ${id}")
     }
@@ -505,7 +520,6 @@ class PalantirDockerPluginTests extends AbstractPluginTest {
             plugins {
                 id 'com.palantir.docker'
             }
-
             docker {
                 name '${id}'
                 files "bar.txt"
@@ -527,7 +541,6 @@ class PalantirDockerPluginTests extends AbstractPluginTest {
         String id = 'id10'
         createFile('from_project')
         createFile('from_tgz')
-
         file('Dockerfile') << """
             FROM alpine:3.2
             MAINTAINER id
@@ -538,7 +551,6 @@ class PalantirDockerPluginTests extends AbstractPluginTest {
             plugins {
                 id 'com.palantir.docker'
             }
-
             task myTgz(type: Tar) {
                 destinationDir project.buildDir
                 baseName 'foo'
@@ -548,7 +560,6 @@ class PalantirDockerPluginTests extends AbstractPluginTest {
                     from 'from_tgz'
                 }
             }
-
             docker {
                 name '${id}'
                 files tasks.myTgz.outputs, 'from_project'
@@ -556,29 +567,24 @@ class PalantirDockerPluginTests extends AbstractPluginTest {
         """.stripIndent()
         when:
         BuildResult buildResult = with('docker').build()
-
         then:
         buildResult.task(':myTgz').outcome == TaskOutcome.SUCCESS
         buildResult.task(':dockerPrepare').outcome == TaskOutcome.SUCCESS
         buildResult.task(':docker').outcome == TaskOutcome.SUCCESS
         execCond("docker rmi -f ${id}")
     }
-
     def 'can build Docker image from standard Gradle distribution plugin'() {
         given:
         String id = 'id11'
-
         file('Dockerfile') << """
             FROM alpine:3.2
             MAINTAINER id
             ADD . /tmp/
         """.stripIndent()
-
         file('src/main/java/test/Test.java') << '''
         package test;
         public class Test { public static void main(String[] args) {} }
         '''.stripIndent()
-
         buildFile << """
             plugins {
                 id 'com.palantir.docker'
@@ -586,7 +592,6 @@ class PalantirDockerPluginTests extends AbstractPluginTest {
                 id 'application'
             }
             mainClassName = "test.Test"
-
             docker {
                 name '${id}'
                 files tasks.distTar.outputs
@@ -594,14 +599,12 @@ class PalantirDockerPluginTests extends AbstractPluginTest {
         """.stripIndent()
         when:
         BuildResult buildResult = with('docker').build()
-
         then:
         buildResult.task(':distTar').outcome == TaskOutcome.SUCCESS
         buildResult.task(':dockerPrepare').outcome == TaskOutcome.SUCCESS
         buildResult.task(':docker').outcome == TaskOutcome.SUCCESS
         execCond("docker rmi -f ${id}")
     }
-
     def 'check labels are correctly applied to image'() {
         given:
         String id = 'id10'
@@ -612,7 +615,6 @@ class PalantirDockerPluginTests extends AbstractPluginTest {
             plugins {
                 id 'com.palantir.docker'
             }
-
             docker {
                 name '${id}'
                 labels 'test-label': 'test-value', 'another.label': 'another.value'
@@ -620,13 +622,11 @@ class PalantirDockerPluginTests extends AbstractPluginTest {
         """.stripIndent()
         when:
         BuildResult buildResult = with('docker').build()
-
         then:
         buildResult.task(':docker').outcome == TaskOutcome.SUCCESS
         exec("docker inspect --format '{{.Config.Labels}}' ${id}").contains("test-label")
         execCond("docker rmi -f ${id}")
     }
-
     def 'fail with bad label key character'() {
         given:
         file('Dockerfile') << """
@@ -636,7 +636,6 @@ class PalantirDockerPluginTests extends AbstractPluginTest {
             plugins {
                 id 'com.palantir.docker'
             }
-
             docker {
                 name 'test-bad-labels'
                 labels 'test_label': 'test_value'
@@ -644,17 +643,14 @@ class PalantirDockerPluginTests extends AbstractPluginTest {
         """.stripIndent()
         when:
         BuildResult buildResult = with('docker').buildAndFail()
-
         then:
         buildResult.output.contains("Docker label 'test_label' contains illegal characters. Label keys " +
             "must only contain lowercase alphanumberic, `.`, or `-` characters (must match " +
             "^[a-z0-9.-]*\$).")
     }
-
     def 'check if compute name replaces the name correctly'() {
         expect:
         PalantirDockerPlugin.computeName(name, tag) == result
-
         where:
         name             | tag      | result
         "v1"             | "latest" | "v1:latest"
@@ -694,7 +690,6 @@ class PalantirDockerPluginTests extends AbstractPluginTest {
         "host:port/v1"   | "name@host:port/v2:2" | "host:port/v2:2"
         "host:port/v1:1" | "name@host:port/v2:2" | "host:port/v2:2"
     }
-
     def 'can add entire directories via copyspec'() {
         given:
         String id = 'id1'
@@ -708,7 +703,6 @@ class PalantirDockerPluginTests extends AbstractPluginTest {
             plugins {
                 id 'com.palantir.docker'
             }
-
             docker {
                 name '${id}'
                 copySpec.from("myDir").into("myDir")
@@ -716,7 +710,6 @@ class PalantirDockerPluginTests extends AbstractPluginTest {
         """.stripIndent()
         when:
         BuildResult buildResult = with('docker').build()
-
         then:
         buildResult.task(':dockerPrepare').outcome == TaskOutcome.SUCCESS
         file("build/docker/myDir/bar").exists()
