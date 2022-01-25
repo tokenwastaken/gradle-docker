@@ -30,8 +30,17 @@ apply plugin: 'com.palantir.git-version'
 apply plugin: 'org.inferred.processors'
 apply plugin: 'com.palantir.external-publish-jar'
 
+gradlePlugin {
+  plugins {
+    root {
+       id = 'com.dataroid.palantir'
+       implementationClass = 'com.palantir.gradle.docker.PalantirDockerPlugin'
+}
+}
+}
+
 group 'com.palantir.gradle.docker'
-version System.env.CIRCLE_TAG ?: gitVersion()
+version '0.33.0-dataroid'
 
 dependencies {
     compile gradleApi()
@@ -51,15 +60,15 @@ pluginBundle {
 
     plugins {
         dockerPlugin {
-            id = 'com.palantir.docker'
+            id = 'com.palantir.dataroid.docker'
             displayName = 'Palantir Gradle Docker'
         }
         dockerComposePlugin {
-            id = 'com.palantir.docker-compose'
+            id = 'com.palantir.dataroid.docker-compose'
             displayName = 'Palantir Gradle Docker-Compose'
         }
         dockerRunPlugin {
-            id = 'com.palantir.docker-run'
+            id = 'com.palantir.dataroid.docker-run'
             displayName = 'Palantir Gradle Docker-Run'
         }
     }

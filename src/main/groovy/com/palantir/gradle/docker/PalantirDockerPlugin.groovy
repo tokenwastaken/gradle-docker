@@ -78,15 +78,15 @@ class PalantirDockerPlugin implements Plugin<Project> {
             dependsOn exec
         })
 
+        Exec push = project.tasks.create('dockerPush', Exec, {
+            group = 'Docker'
+            description = 'Pushes named Docker image to configured Docker Hub.'
+            dependsOn tag
+        })
+
         Task pushAllTags = project.tasks.create('dockerTagsPush', {
             group = 'Docker'
             description = 'Pushes all tagged Docker images to configured Docker Hub.'
-        })
-
-        project.tasks.create('dockerPush', {
-            group = 'Docker'
-            description = 'Pushes named Docker image to configured Docker Hub.'
-            dependsOn pushAllTags
         })
 
         Zip dockerfileZip = project.tasks.create('dockerfileZip', Zip, {
@@ -165,6 +165,11 @@ class PalantirDockerPlugin implements Plugin<Project> {
                 pushAllTags.dependsOn pushSubTask
             }
 
+            push.with {
+                workingDir dockerDir
+                commandLine 'docker', 'push', "${-> ext.name}"
+            }
+
             dockerfileZip.with {
                 from(ext.resolvedDockerfile)
             }
@@ -172,7 +177,21 @@ class PalantirDockerPlugin implements Plugin<Project> {
     }
 
     private List<String> buildCommandLine(DockerExtension ext) {
-        List<String> buildCommandLine = ['docker', 'build']
+        List<String> buildCommandLine = ['docker']
+        if (ext.buildx) {
+            buildCommandLine.addAll(['buildx','build'])
+            if(!ext.platform.isEmpty()) {
+                buildCommandLine.addAll('--platform',String.join(',',ext.platform))
+            }
+            if (ext.load) {
+                buildCommandLine.add '--load'
+            }
+            if (ext.builder != null) {
+                buildCommandLine.addAll('--builder',ext.builder)
+            }
+        } else {
+            buildCommandLine.add 'build'
+        }
         if (ext.noCache) {
             buildCommandLine.add '--no-cache'
         }

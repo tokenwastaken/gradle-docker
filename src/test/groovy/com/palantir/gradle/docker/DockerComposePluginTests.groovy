@@ -35,21 +35,17 @@ class DockerComposePluginTests extends AbstractPluginTest {
             plugins {
                 id 'com.palantir.docker-compose'
             }
-
             repositories {
                 jcenter()
             }
-
             dockerCompose {
                 templateTokens(['currentImageName': 'snapshot.docker.registry/current-service:1.0.0-1-gabcabcd'])
             }
-
             dependencies {
                 docker 'io.dropwizard:dropwizard-jackson:0.8.2'
                   // transitive dependencies: com.google.guava:guava:18.0, org.slf4j:slf4j-api:1.7.10
                 docker 'com.google.guava:guava:17.0'  // should bump to 18.0 via the above
             }
-
         '''.stripIndent()
 
         when:
@@ -73,15 +69,12 @@ class DockerComposePluginTests extends AbstractPluginTest {
             plugins {
                 id 'com.palantir.docker-compose'
             }
-
             repositories {
                 jcenter()
             }
-
             dependencies {
                 docker 'com.google.guava:guava:17.0'  // should bump to 18.0 via the above
             }
-
         '''.stripIndent()
 
         when:
@@ -101,11 +94,9 @@ class DockerComposePluginTests extends AbstractPluginTest {
             plugins {
                 id 'com.palantir.docker-compose'
             }
-
             repositories {
                 jcenter()
             }
-
             dockerCompose {
                 template 'templates/customTemplate.yml'
                 dockerComposeFile 'compose-files/customDockerCompose.yml'
@@ -126,7 +117,6 @@ class DockerComposePluginTests extends AbstractPluginTest {
             plugins {
                 id 'com.palantir.docker-compose'
             }
-
             dockerCompose {
                 template 'templates/customTemplate.yml'
             }
@@ -173,6 +163,8 @@ class DockerComposePluginTests extends AbstractPluginTest {
         with('dockerComposeUp').build()
         then:
         file("foobarbaz").exists()
+        execCond("docker stop helloworld")
+        execCond("docker rm helloworld")
     }
 
     def 'docker-compose successfully creates docker image from custom file'() {
@@ -191,7 +183,6 @@ class DockerComposePluginTests extends AbstractPluginTest {
             plugins {
                 id 'com.palantir.docker-compose'
             }
-
             dockerCompose {
               dockerComposeFile "test-file.yml"
             }
@@ -200,6 +191,8 @@ class DockerComposePluginTests extends AbstractPluginTest {
         with('dockerComposeUp').build()
         then:
         file("qux").exists()
+        execCond("docker stop helloworld2")
+        execCond("docker rm helloworld2")
     }
 
     def 'can set custom properties on generateDockerCompose.ext'() {
@@ -212,7 +205,6 @@ class DockerComposePluginTests extends AbstractPluginTest {
             plugins {
                 id 'com.palantir.docker-compose'
             }
-
             generateDockerCompose.ext.foo = "bar"
         '''.stripIndent()
         when:
@@ -236,10 +228,9 @@ class DockerComposePluginTests extends AbstractPluginTest {
                 id 'com.palantir.docker-compose'
             }
         '''.stripIndent()
-        with('dockerComposeUp').build()
         when:
-        with('dockerComposeDown').build()
+        BuildResult buildResult = with('dockerComposeUp', 'dockerComposeDown').build()
         then:
-        processCount() == 0
+        buildResult.task(':dockerComposeDown').outcome == TaskOutcome.SUCCESS
     }
 }
